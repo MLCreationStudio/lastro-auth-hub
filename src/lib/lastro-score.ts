@@ -106,7 +106,7 @@ const NICHE_ALIASES: Record<string, string> = {
   curso: 'infoproduto',
   dentista: 'clinica_odontologica',
   ecommerce: 'ecommerce',
-  e-commerce: 'ecommerce',
+  'e-commerce': 'ecommerce',
   imovel: 'imobiliaria',
   imóvel: 'imobiliaria',
   imoveis: 'imobiliaria',
