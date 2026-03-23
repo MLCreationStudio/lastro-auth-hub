@@ -1,7 +1,9 @@
+import { Session } from '@supabase/supabase-js';
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Session } from '@supabase/supabase-js';
+import { extrairDadosTopico } from '@/lib/anthropic';
 import { supabase } from '@/lib/supabase';
+import { TOPICOS } from '@/lib/topicos';
 
 type ConversationItem = {
   question: string;
@@ -22,76 +24,22 @@ type DiagnosticoRecord = {
   budget_total: number | null;
   meta_clientes: number | null;
   prazo_esperado: number | null;
+  nicho: string | null;
+  subnicho: string | null;
+  categoria: string | null;
+  modelo_negocio: string | null;
+  icp_score: number | null;
+  diferencial_score: number | null;
+  canais_testados: unknown[] | null;
+  tem_historico: boolean | null;
+  complementares_usados: number;
 };
-
-const QUESTIONS = [
-  'O que você vende — e qual problema ele resolve para o seu cliente?',
-  'Me descreva a pessoa que mais compra de você. Quem é ela?',
-  'Qual é o ticket médio da sua venda? E como o cliente paga — único, recorrente ou parcelado?',
-  'Quem são seus principais concorrentes? E por que um cliente escolheria você no lugar deles?',
-  'Em qual região ou segmento você quer crescer nos próximos 90 dias?',
-  'Você já tentou alguma ação de marketing antes? O que funcionou e o que não funcionou?',
-  'Quanto você pode investir por mês em marketing — incluindo ferramenta, mídia e produção?',
-  'Quantos clientes novos você precisa fechar por mês para considerar o marketing bem-sucedido?',
-  'Em quanto tempo você espera ver os primeiros resultados?',
-] as const;
 
 const COMPLETION_LINES = [
   'Analisando seu negócio...',
   'Calculando o que é possível...',
   'Preparando seu diagnóstico...',
 ] as const;
-
-const extractFirstNumber = (value: string) => {
-  const normalized = value
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
-
-  const match = normalized.match(/\d{1,3}(?:\.\d{3})*(?:,\d+)?|\d+(?:,\d+)?/);
-  if (!match) return null;
-
-  const rawNumber = match[0].replace(/\./g, '').replace(',', '.');
-  const parsed = Number(rawNumber);
-  if (Number.isNaN(parsed)) return null;
-
-  const milMultiplier = /\bmil\b|k\b/.test(normalized.slice(match.index ?? 0));
-  return milMultiplier ? parsed * 1000 : parsed;
-};
-
-const extractBillingModel = (value: string) => {
-  const normalized = value
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
-
-  if (normalized.includes('recorrente')) return 'recorrente';
-  if (normalized.includes('parcelado')) return 'parcelado';
-  if (normalized.includes('unico')) return 'único';
-
-  return null;
-};
-
-const extractPrazoEsperado = (value: string) => {
-  const normalized = value
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
-
-  const directNumber = extractFirstNumber(normalized);
-  let prazo = directNumber;
-
-  if (normalized.includes('mes')) {
-    prazo = (directNumber ?? 0) * 30;
-  }
-
-  if (!prazo) return null;
-
-  const allowed = [30, 60, 90, 180];
-  return allowed.reduce((closest, current) =>
-    Math.abs(current - prazo) < Math.abs(closest - prazo) ? current : closest,
-  );
-};
 
 const formatCurrency = (value: number | null) => {
   if (value === null || Number.isNaN(value)) return null;
@@ -137,7 +85,7 @@ const buildAnswerFromRecord = (record: DiagnosticoRecord, index: number) => {
 };
 
 const buildConversationHistory = (record: DiagnosticoRecord) => {
-  const maxAnswered = Math.max(0, Math.min(record.etapa_atual ?? 0, QUESTIONS.length));
+  const maxAnswered = Math.max(0, Math.min(record.etapa_atual ?? 0, TOPICOS.length));
   const history: ConversationItem[] = [];
 
   for (let index = 0; index < maxAnswered; index += 1) {
@@ -145,7 +93,7 @@ const buildConversationHistory = (record: DiagnosticoRecord) => {
     if (!answer) break;
 
     history.push({
-      question: QUESTIONS[index],
+      question: TOPICOS[index].pergunta_inicial,
       answer,
     });
   }
@@ -153,41 +101,9 @@ const buildConversationHistory = (record: DiagnosticoRecord) => {
   return history;
 };
 
-const buildPayloadForStep = (stepIndex: number, answer: string, userId: string) => {
-  const stepNumber = stepIndex + 1;
-
-  switch (stepIndex) {
-    case 0:
-      return { user_id: userId, etapa_atual: stepNumber, produto_desc: answer };
-    case 1:
-      return { user_id: userId, etapa_atual: stepNumber, icp_desc: answer };
-    case 2:
-      return {
-        user_id: userId,
-        etapa_atual: stepNumber,
-        ticket_medio: extractFirstNumber(answer),
-        modelo_cobranca: extractBillingModel(answer),
-      };
-    case 3:
-      return { user_id: userId, etapa_atual: stepNumber, concorrentes_desc: answer };
-    case 4:
-      return { user_id: userId, etapa_atual: stepNumber, foco_geografico: answer };
-    case 5:
-      return { user_id: userId, etapa_atual: stepNumber, historico_marketing: answer };
-    case 6:
-      return { user_id: userId, etapa_atual: stepNumber, budget_total: extractFirstNumber(answer) };
-    case 7:
-      return {
-        user_id: userId,
-        etapa_atual: stepNumber,
-        meta_clientes: extractFirstNumber(answer) !== null ? Math.round(extractFirstNumber(answer) as number) : null,
-      };
-    case 8:
-      return { user_id: userId, etapa_atual: stepNumber, prazo_esperado: extractPrazoEsperado(answer) };
-    default:
-      return { user_id: userId, etapa_atual: stepNumber };
-  }
-};
+const isString = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;
+const isBoolean = (value: unknown): value is boolean => typeof value === 'boolean';
+const isArray = (value: unknown): value is unknown[] => Array.isArray(value);
 
 const Diagnostico = () => {
   const location = useLocation();
@@ -198,6 +114,7 @@ const Diagnostico = () => {
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [isProcessingAI, setIsProcessingAI] = useState(false);
   const [shouldShake, setShouldShake] = useState(false);
   const [typedQuestion, setTypedQuestion] = useState('');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -207,15 +124,102 @@ const Diagnostico = () => {
   const [saveError, setSaveError] = useState('');
   const [isCompleting, setIsCompleting] = useState(false);
   const [completionIndex, setCompletionIndex] = useState(0);
+  const [complementaresUsados, setComplementaresUsados] = useState(0);
+  const [dadosExtraidos, setDadosExtraidos] = useState<Record<string, unknown>>({});
+  const [perguntaAtiva, setPerguntaAtiva] = useState(TOPICOS[0].pergunta_inicial);
+  const [isPerguntaComplementar, setIsPerguntaComplementar] = useState(false);
   const shouldRestart = Boolean((location.state as { restart?: boolean } | null)?.restart);
 
-  const activeQuestion = QUESTIONS[currentQuestionIndex] ?? null;
-  const progressWidth = `${(conversation.length / QUESTIONS.length) * 100}%`;
+  const progressWidth = `${isCompleting ? 100 : (currentQuestionIndex / TOPICOS.length) * 100}%`;
   const stepLabel = isCompleting
-    ? `${QUESTIONS.length} de ${QUESTIONS.length}`
-    : `${Math.min(currentQuestionIndex + 1, QUESTIONS.length)} de ${QUESTIONS.length}`;
-
+    ? `${TOPICOS.length} de ${TOPICOS.length}`
+    : `${currentQuestionIndex + 1} de ${TOPICOS.length}`;
   const completionMessage = useMemo(() => COMPLETION_LINES[completionIndex], [completionIndex]);
+
+  const salvarProgresso = async (
+    topicoIndex: number,
+    resposta: string,
+    dados: Record<string, unknown>,
+    userId: string,
+    complementares: number,
+  ) => {
+    const payload: Record<string, unknown> = {
+      user_id: userId,
+      etapa_atual: topicoIndex + 1,
+      updated_at: new Date().toISOString(),
+      complementares_usados: complementares,
+    };
+
+    const camposDiretos = [
+      'produto_desc',
+      'icp_desc',
+      'concorrentes_desc',
+      'foco_geografico',
+      'historico_marketing',
+      'nicho',
+      'subnicho',
+      'categoria',
+      'modelo_negocio',
+      'icp_score',
+      'diferencial_score',
+      'canais_testados',
+      'tem_historico',
+      'ticket_medio',
+      'modelo_cobranca',
+      'budget_total',
+      'meta_clientes',
+      'prazo_esperado',
+    ] as const;
+
+    for (const campo of camposDiretos) {
+      const valor = dados[campo];
+      if (valor !== undefined && valor !== null) {
+        payload[campo] = valor;
+      }
+    }
+
+    if (!payload.produto_desc && isString(dados.produto)) payload.produto_desc = dados.produto;
+    if (!payload.icp_desc && isString(dados.perfil)) payload.icp_desc = dados.perfil;
+
+    if (!payload.foco_geografico) {
+      const foco = [isString(dados.regiao) ? dados.regiao : null, isString(dados.segmento) ? dados.segmento : null]
+        .filter(Boolean)
+        .join(' · ');
+      if (foco) payload.foco_geografico = foco;
+    }
+
+    if (!payload.concorrentes_desc && (isArray(dados.concorrentes) || isString(dados.diferencial))) {
+      const concorrentes = isArray(dados.concorrentes)
+        ? dados.concorrentes.filter(isString).join(', ')
+        : '';
+      const diferencial = isString(dados.diferencial) ? dados.diferencial : '';
+      const combinado = [concorrentes ? `Concorrentes: ${concorrentes}` : null, diferencial ? `Diferencial: ${diferencial}` : null]
+        .filter(Boolean)
+        .join(' · ');
+      if (combinado) payload.concorrentes_desc = combinado;
+    }
+
+    if (!payload.historico_marketing && isBoolean(dados.tem_historico)) {
+      payload.historico_marketing = dados.tem_historico
+        ? 'Já testou ações de marketing antes.'
+        : 'Ainda não testou ações de marketing.';
+    }
+
+    const topico = TOPICOS[topicoIndex];
+    if (!payload[topico.campo_principal]) {
+      payload[topico.campo_principal] = resposta;
+    }
+
+    if (!diagnosticoId) {
+      const { data, error } = await supabase.from('diagnostico').insert(payload).select('id').single();
+      if (error) throw error;
+      setDiagnosticoId(data.id);
+      return;
+    }
+
+    const { error } = await supabase.from('diagnostico').update(payload).eq('id', diagnosticoId);
+    if (error) throw error;
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -237,7 +241,7 @@ const Diagnostico = () => {
       const { data, error } = await supabase
         .from('diagnostico')
         .select(
-          'id, user_id, etapa_atual, produto_desc, icp_desc, ticket_medio, modelo_cobranca, concorrentes_desc, foco_geografico, historico_marketing, budget_total, meta_clientes, prazo_esperado',
+          'id, user_id, etapa_atual, produto_desc, icp_desc, ticket_medio, modelo_cobranca, concorrentes_desc, foco_geografico, historico_marketing, budget_total, meta_clientes, prazo_esperado, nicho, subnicho, categoria, modelo_negocio, icp_score, diferencial_score, canais_testados, tem_historico, complementares_usados',
         )
         .eq('user_id', activeSession.user.id)
         .order('updated_at', { ascending: false })
@@ -272,6 +276,13 @@ const Diagnostico = () => {
             diferencial_score: null,
             lastro_score: null,
             zona: null,
+            nicho: null,
+            subnicho: null,
+            categoria: null,
+            modelo_negocio: null,
+            canais_testados: null,
+            tem_historico: null,
+            complementares_usados: 0,
             updated_at: new Date().toISOString(),
           })
           .eq('id', data.id);
@@ -284,6 +295,10 @@ const Diagnostico = () => {
 
         setConversation([]);
         setCurrentQuestionIndex(0);
+        setComplementaresUsados(0);
+        setPerguntaAtiva(TOPICOS[0].pergunta_inicial);
+        setIsPerguntaComplementar(false);
+        setDadosExtraidos({});
         setDiagnosticoId(data.id);
         setLoading(false);
         return;
@@ -294,8 +309,33 @@ const Diagnostico = () => {
         setConversation(history);
         setCurrentQuestionIndex(history.length);
         setDiagnosticoId(data.id);
+        setComplementaresUsados(data.complementares_usados ?? 0);
+        setDadosExtraidos({
+          nicho: data.nicho,
+          subnicho: data.subnicho,
+          categoria: data.categoria,
+          modelo_negocio: data.modelo_negocio,
+          icp_score: data.icp_score,
+          diferencial_score: data.diferencial_score,
+          canais_testados: data.canais_testados,
+          tem_historico: data.tem_historico,
+          ticket_medio: data.ticket_medio,
+          modelo_cobranca: data.modelo_cobranca,
+          budget_total: data.budget_total,
+          meta_clientes: data.meta_clientes,
+          prazo_esperado: data.prazo_esperado,
+          produto_desc: data.produto_desc,
+          icp_desc: data.icp_desc,
+          concorrentes_desc: data.concorrentes_desc,
+          foco_geografico: data.foco_geografico,
+          historico_marketing: data.historico_marketing,
+        });
 
-        if ((data.etapa_atual ?? 0) >= QUESTIONS.length) {
+        if (history.length < TOPICOS.length) {
+          setPerguntaAtiva(TOPICOS[history.length].pergunta_inicial);
+        }
+
+        if ((data.etapa_atual ?? 0) >= TOPICOS.length) {
           navigate('/resultado', { replace: true });
           return;
         }
@@ -312,18 +352,18 @@ const Diagnostico = () => {
   }, [navigate, shouldRestart]);
 
   useEffect(() => {
-    if (loading || isCompleting || !activeQuestion) return;
+    if (loading || isCompleting || !perguntaAtiva) return;
 
     setTypedQuestion('');
     setIsTyping(true);
 
-    const speed = activeQuestion.length > 60 ? 14 : 20;
+    const speed = perguntaAtiva.length > 60 ? 14 : 20;
     let timeoutId: number;
 
     const typeCharacter = (index: number) => {
-      setTypedQuestion(activeQuestion.slice(0, index + 1));
+      setTypedQuestion(perguntaAtiva.slice(0, index + 1));
 
-      if (index < activeQuestion.length - 1) {
+      if (index < perguntaAtiva.length - 1) {
         timeoutId = window.setTimeout(() => typeCharacter(index + 1), speed);
       } else {
         setIsTyping(false);
@@ -333,20 +373,20 @@ const Diagnostico = () => {
     timeoutId = window.setTimeout(() => typeCharacter(0), 120);
 
     return () => window.clearTimeout(timeoutId);
-  }, [activeQuestion, isCompleting, loading]);
+  }, [perguntaAtiva, isCompleting, loading]);
 
   useEffect(() => {
-    if (!isTyping && !loading && !isCompleting) {
+    if (!isTyping && !loading && !isCompleting && !isProcessingAI) {
       inputRef.current?.focus();
     }
-  }, [isTyping, loading, isCompleting]);
+  }, [isTyping, loading, isCompleting, isProcessingAI]);
 
   useEffect(() => {
     const container = scrollRef.current;
     if (!container) return;
 
     container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
-  }, [conversation, typedQuestion, isCompleting]);
+  }, [conversation, typedQuestion, isCompleting, isProcessingAI]);
 
   useEffect(() => {
     if (!shouldShake) return;
@@ -373,48 +413,68 @@ const Diagnostico = () => {
     event.preventDefault();
 
     const trimmedAnswer = answer.trim();
-    if (!trimmedAnswer) {
-      setShouldShake(true);
+    if (!trimmedAnswer || isProcessingAI) {
+      if (!trimmedAnswer) setShouldShake(true);
       return;
     }
 
-    if (!session?.user || !activeQuestion) return;
+    if (!session?.user) return;
 
     setSaveError('');
     setIsSaving(true);
+    setIsProcessingAI(true);
 
-    const payload = buildPayloadForStep(currentQuestionIndex, trimmedAnswer, session.user.id);
+    const topicoAtual = TOPICOS[currentQuestionIndex];
 
     try {
-      if (!diagnosticoId) {
-        const { data, error } = await supabase
-          .from('diagnostico')
-          .insert(payload)
-          .select('id')
-          .single();
+      const resultado = await extrairDadosTopico(topicoAtual, trimmedAnswer);
+      const novosDados = { ...dadosExtraidos, ...resultado };
+      const proximoComplementar = complementaresUsados + 1;
+      const podePerguntarComplementar =
+        !resultado.suficiente &&
+        complementaresUsados < topicoAtual.max_complementares &&
+        isString(resultado.pergunta_complementar);
 
-        if (error) throw error;
-        setDiagnosticoId(data.id);
-      } else {
-        const { error } = await supabase.from('diagnostico').update(payload).eq('id', diagnosticoId);
-        if (error) throw error;
+      setDadosExtraidos(novosDados);
+      setConversation((current) => [...current, { question: perguntaAtiva, answer: trimmedAnswer }]);
+      setAnswer('');
+      setTypedQuestion('');
+
+      await salvarProgresso(
+        currentQuestionIndex,
+        trimmedAnswer,
+        novosDados,
+        session.user.id,
+        podePerguntarComplementar ? proximoComplementar : 0,
+      );
+
+      if (podePerguntarComplementar) {
+        setComplementaresUsados(proximoComplementar);
+        setIsPerguntaComplementar(true);
+        window.setTimeout(() => {
+          setPerguntaAtiva(resultado.pergunta_complementar as string);
+        }, 500);
+        return;
       }
 
-      setConversation((current) => [...current, { question: activeQuestion, answer: trimmedAnswer }]);
-      setAnswer('');
+      setComplementaresUsados(0);
+      setIsPerguntaComplementar(false);
 
-      if (currentQuestionIndex === QUESTIONS.length - 1) {
+      if (currentQuestionIndex === TOPICOS.length - 1) {
         setIsCompleting(true);
         setCompletionIndex(0);
       } else {
         window.setTimeout(() => {
+          const proximoTopico = TOPICOS[currentQuestionIndex + 1];
+          setPerguntaAtiva(proximoTopico.pergunta_inicial);
           setCurrentQuestionIndex((index) => index + 1);
         }, 500);
       }
-    } catch (error) {
+    } catch (_error) {
       setSaveError('Não foi possível salvar sua resposta agora.');
     } finally {
       setIsSaving(false);
+      setIsProcessingAI(false);
     }
   };
 
@@ -440,10 +500,7 @@ const Diagnostico = () => {
         </div>
       </div>
 
-      <div
-        ref={scrollRef}
-        className="h-full overflow-y-auto px-6 pb-44 pt-24 md:px-20 md:pb-48 md:pt-28"
-      >
+      <div ref={scrollRef} className="h-full overflow-y-auto px-6 pb-44 pt-24 md:px-20 md:pb-48 md:pt-28">
         <div className="mx-auto flex max-w-[560px] flex-col">
           {conversation.map((item, index) => (
             <div key={`${index}-${item.question}`} className="mb-8 last:mb-0">
@@ -454,12 +511,26 @@ const Diagnostico = () => {
             </div>
           ))}
 
-          {!isCompleting && activeQuestion && (
+          {isPerguntaComplementar && !isProcessingAI && !isCompleting && (
+            <p className="mb-2 text-[11px] uppercase tracking-[0.08em] text-[hsl(var(--foreground)/0.2)]">
+              detalhe complementar
+            </p>
+          )}
+
+          {!isCompleting && perguntaAtiva && !isProcessingAI && (
             <div className="mb-8">
               <p className="font-display text-[20px] leading-[1.45] text-foreground md:text-[22px]">
                 {typedQuestion}
                 {isTyping && <span className="ml-1 inline-block h-[18px] w-0.5 animate-cursor bg-primary align-middle" />}
               </p>
+            </div>
+          )}
+
+          {isProcessingAI && (
+            <div className="mb-8 flex items-center gap-2 text-[18px] tracking-[0.3em] text-[hsl(var(--foreground)/0.3)]">
+              <span className="animate-pulse">·</span>
+              <span className="animate-pulse [animation-delay:120ms]">·</span>
+              <span className="animate-pulse [animation-delay:240ms]">·</span>
             </div>
           )}
 
@@ -488,16 +559,16 @@ const Diagnostico = () => {
                 value={answer}
                 onChange={(event) => setAnswer(event.target.value)}
                 placeholder="escreva sua resposta..."
-                disabled={isTyping || isSaving}
+                disabled={isTyping || isSaving || isProcessingAI}
                 className={`font-display w-full bg-transparent text-[17px] text-foreground caret-primary outline-none ${shouldShake ? 'animate-shake' : ''}`}
               />
 
               <button
                 type="submit"
-                disabled={isTyping || isSaving}
+                disabled={isTyping || isSaving || isProcessingAI}
                 className="rounded-[6px] border border-[hsl(var(--primary)/0.3)] px-4 py-1.5 text-[12px] uppercase tracking-[0.04em] text-primary transition-colors duration-200 hover:border-[hsl(var(--primary)/0.5)] hover:bg-[hsl(var(--primary)/0.08)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring active:scale-[0.98] disabled:opacity-40"
               >
-                {isSaving ? '...' : 'enviar'}
+                {isSaving || isProcessingAI ? '...' : 'enviar'}
               </button>
             </div>
           </div>

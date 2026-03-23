@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, forwardRef, useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 
@@ -6,7 +6,7 @@ type ProtectedRouteProps = {
   children: ReactNode;
 };
 
-const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+const ProtectedRoute = forwardRef<HTMLDivElement, ProtectedRouteProps>(({ children }, _ref) => {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -49,6 +49,8 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }
 
   return <>{children}</>;
-};
+});
+
+ProtectedRoute.displayName = 'ProtectedRoute';
 
 export default ProtectedRoute;

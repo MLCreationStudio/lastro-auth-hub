@@ -15,6 +15,8 @@ export type DiagnosticoScoreRecord = {
   concorrentes_desc: string | null;
   budget_total: number | null;
   prazo_esperado: number | null;
+  icp_score: number | null;
+  diferencial_score: number | null;
 };
 
 export type LastroZone = 'critico' | 'ajuste' | 'ressalvas' | 'pronto';
@@ -245,10 +247,16 @@ export const calculateLastroScore = (
   const nicho = resolveNicho(diagnostico.produto_desc, benchmarks);
   const benchmark = benchmarks.find((item) => item.nicho === nicho) ?? null;
 
-  const { score: dim1, budgetMidia } = scoreFinancialViability(diagnostico.budget_total, benchmark?.cac_min ?? null);
-  const dim2 = scoreIcpClarity(diagnostico.icp_desc);
-  const dim3 = scoreTimelineAlignment(diagnostico.prazo_esperado, benchmark?.ciclo_min_dias ?? DEFAULT_CICLO_MIN_DIAS);
-  const dim4 = scoreMarketMaturity(diagnostico.concorrentes_desc);
+  const { score: dim1, budgetMidia } = scoreFinancialViability(
+    diagnostico.budget_total,
+    benchmark?.cac_min ?? null,
+  );
+  const dim2 = diagnostico.icp_score ?? scoreIcpClarity(diagnostico.icp_desc);
+  const dim3 = scoreTimelineAlignment(
+    diagnostico.prazo_esperado,
+    benchmark?.ciclo_min_dias ?? DEFAULT_CICLO_MIN_DIAS,
+  );
+  const dim4 = diagnostico.diferencial_score ?? scoreMarketMaturity(diagnostico.concorrentes_desc);
 
   const score = Math.round(dim1 * 0.4 + dim2 * 0.25 + dim3 * 0.2 + dim4 * 0.15);
 
