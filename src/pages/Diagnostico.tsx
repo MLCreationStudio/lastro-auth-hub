@@ -234,14 +234,6 @@ const Diagnostico = () => {
 
       setSession(activeSession);
 
-      if (shouldRestart) {
-        setConversation([]);
-        setCurrentQuestionIndex(0);
-        setDiagnosticoId(null);
-        setLoading(false);
-        return;
-      }
-
       const { data, error } = await supabase
         .from('diagnostico')
         .select(
@@ -256,6 +248,43 @@ const Diagnostico = () => {
 
       if (error) {
         setSaveError('Não foi possível carregar seu diagnóstico.');
+        setLoading(false);
+        return;
+      }
+
+      if (data && shouldRestart) {
+        const { error: resetError } = await supabase
+          .from('diagnostico')
+          .update({
+            etapa_atual: 0,
+            produto_desc: null,
+            icp_desc: null,
+            ticket_medio: null,
+            modelo_cobranca: null,
+            concorrentes_desc: null,
+            foco_geografico: null,
+            historico_marketing: null,
+            budget_total: null,
+            meta_clientes: null,
+            prazo_esperado: null,
+            budget_midia: null,
+            icp_score: null,
+            diferencial_score: null,
+            lastro_score: null,
+            zona: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', data.id);
+
+        if (resetError) {
+          setSaveError('Não foi possível reiniciar seu diagnóstico.');
+          setLoading(false);
+          return;
+        }
+
+        setConversation([]);
+        setCurrentQuestionIndex(0);
+        setDiagnosticoId(data.id);
         setLoading(false);
         return;
       }
@@ -373,10 +402,6 @@ const Diagnostico = () => {
 
       setConversation((current) => [...current, { question: activeQuestion, answer: trimmedAnswer }]);
       setAnswer('');
-
-      if (shouldRestart) {
-        navigate('/diagnostico', { replace: true });
-      }
 
       if (currentQuestionIndex === QUESTIONS.length - 1) {
         setIsCompleting(true);
