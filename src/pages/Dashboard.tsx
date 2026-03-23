@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { forwardRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 
@@ -17,7 +17,7 @@ const secondaryCards = [
   },
 ];
 
-const Dashboard = () => {
+const Dashboard = forwardRef<HTMLDivElement>((_props, ref) => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(true);
@@ -62,7 +62,7 @@ const Dashboard = () => {
   if (loading) return <div className="min-h-screen bg-background" />;
 
   return (
-    <div className="min-h-screen bg-background px-6 py-12 md:px-12">
+    <div ref={ref} className="min-h-screen bg-background px-6 py-12 md:px-12">
       <main className="mx-auto w-full max-w-6xl">
         <header className="flex items-center justify-between">
           <p className="font-display text-[22px] italic text-primary">Lastro.</p>
@@ -114,6 +114,8 @@ const Dashboard = () => {
       </main>
     </div>
   );
-};
+});
+
+Dashboard.displayName = 'Dashboard';
 
 export default Dashboard;
