@@ -67,7 +67,10 @@ export type Database = {
           cac_real: number | null
           canais_bloqueados: Json | null
           canais_recomendados: Json | null
+          canais_testados: Json | null
+          categoria: string | null
           clientes_pagando: boolean | null
+          complementares_usados: number
           concorrentes_desc: string | null
           created_at: string | null
           diferencial_score: number | null
@@ -82,11 +85,14 @@ export type Database = {
           meta_clientes: number | null
           metricas_acompanhamento: Json | null
           modelo_cobranca: string | null
+          modelo_negocio: string | null
           nicho: string | null
           plano_90_dias: Json | null
           prazo_esperado: number | null
           produto_desc: string | null
           status_plano: string | null
+          subnicho: string | null
+          tem_historico: boolean | null
           ticket_medio: number | null
           updated_at: string | null
           user_id: string | null
@@ -99,7 +105,10 @@ export type Database = {
           cac_real?: number | null
           canais_bloqueados?: Json | null
           canais_recomendados?: Json | null
+          canais_testados?: Json | null
+          categoria?: string | null
           clientes_pagando?: boolean | null
+          complementares_usados?: number
           concorrentes_desc?: string | null
           created_at?: string | null
           diferencial_score?: number | null
@@ -114,11 +123,14 @@ export type Database = {
           meta_clientes?: number | null
           metricas_acompanhamento?: Json | null
           modelo_cobranca?: string | null
+          modelo_negocio?: string | null
           nicho?: string | null
           plano_90_dias?: Json | null
           prazo_esperado?: number | null
           produto_desc?: string | null
           status_plano?: string | null
+          subnicho?: string | null
+          tem_historico?: boolean | null
           ticket_medio?: number | null
           updated_at?: string | null
           user_id?: string | null
@@ -131,7 +143,10 @@ export type Database = {
           cac_real?: number | null
           canais_bloqueados?: Json | null
           canais_recomendados?: Json | null
+          canais_testados?: Json | null
+          categoria?: string | null
           clientes_pagando?: boolean | null
+          complementares_usados?: number
           concorrentes_desc?: string | null
           created_at?: string | null
           diferencial_score?: number | null
@@ -146,11 +161,14 @@ export type Database = {
           meta_clientes?: number | null
           metricas_acompanhamento?: Json | null
           modelo_cobranca?: string | null
+          modelo_negocio?: string | null
           nicho?: string | null
           plano_90_dias?: Json | null
           prazo_esperado?: number | null
           produto_desc?: string | null
           status_plano?: string | null
+          subnicho?: string | null
+          tem_historico?: boolean | null
           ticket_medio?: number | null
           updated_at?: string | null
           user_id?: string | null
