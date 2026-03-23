@@ -21,6 +21,9 @@
 
     --muted: 156 20% 15%;
     --muted-foreground: 30 33% 70%;
+    --surface: 161 38% 16%;
+    --muted-card-foreground: 30 33% 64%;
+    --subtle-foreground: 30 33% 56%;
 
     --accent: 157 68% 37%;
     --accent-foreground: 156 40% 9%;
