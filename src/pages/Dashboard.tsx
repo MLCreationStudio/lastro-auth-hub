@@ -62,45 +62,56 @@ const Dashboard = () => {
   if (loading) return <div className="min-h-screen bg-background" />;
 
   return (
-    <div className="min-h-screen bg-background px-6 pb-24 pt-16 md:px-[60px] md:pt-20">
-      <main className="mx-auto flex min-h-[calc(100vh-9rem)] w-full max-w-5xl flex-col justify-center">
-        <div className="max-w-xl">
-          <h1 className="text-[36px] font-medium leading-[1.08] text-foreground">Olá.</h1>
-          <p className="mt-3 text-base italic text-muted-foreground">O que você quer descobrir hoje?</p>
-        </div>
-
-        <section className="mt-12 max-w-3xl rounded-[12px] bg-[hsl(var(--surface))] p-8">
-          <h2 className="text-[18px] font-medium leading-tight text-foreground">Diagnóstico de viabilidade</h2>
-          <p className="mt-3 max-w-lg text-sm italic text-muted-foreground">
-            Descubra o que é possível com o seu orçamento antes de investir.
-          </p>
+    <div className="min-h-screen bg-background px-6 py-12 md:px-12">
+      <main className="mx-auto w-full max-w-6xl">
+        <header className="flex items-center justify-between">
+          <p className="font-display text-[22px] italic text-primary">Lastro.</p>
           <button
-            onClick={() => navigate('/diagnostico')}
-            className="mt-6 rounded-[6px] bg-primary px-6 py-3 text-base text-primary-foreground transition-colors duration-200 hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring active:scale-[0.98]"
+            onClick={handleLogout}
+            className="text-[11px] uppercase tracking-[0.08em] text-[hsl(var(--foreground)/0.2)] transition-colors duration-200 hover:text-[hsl(var(--foreground)/0.4)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring active:scale-[0.98]"
           >
-            Iniciar diagnóstico →
+            sair
           </button>
+        </header>
+
+        <section className="mt-14 max-w-2xl">
+          <h1 className="font-display text-[42px] leading-[0.98] text-foreground md:text-[48px]">Olá.</h1>
+          <p className="mt-3 text-sm font-light leading-[1.6] text-[hsl(var(--foreground)/0.35)]">
+            O que você quer descobrir hoje?
+          </p>
         </section>
 
-        <section className="mt-4 grid gap-3 md:grid-cols-3">
+        <button
+          onClick={() => navigate('/diagnostico')}
+          className="mt-12 block w-full max-w-4xl rounded-[14px] border border-[hsl(var(--primary)/0.12)] bg-[hsl(var(--surface))] p-8 text-left transition-colors duration-200 hover:border-[hsl(var(--primary)/0.3)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring active:scale-[0.995]"
+        >
+          <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.1em] text-primary">
+            <span className="h-px w-4 bg-primary" />
+            <span>módulo 1</span>
+          </div>
+          <h2 className="mt-4 font-display text-[24px] leading-[1.1] text-foreground md:text-[26px]">
+            Diagnóstico de viabilidade
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm font-light leading-[1.6] text-secondary">
+            Descubra o que é possível com o seu orçamento antes de investir.
+          </p>
+          <p className="mt-6 text-[13px] font-medium text-primary">iniciar diagnóstico →</p>
+        </button>
+
+        <section className="mt-3 grid gap-2.5 md:grid-cols-3">
           {secondaryCards.map((card) => (
-            <div key={card.title} className="rounded-[8px] bg-[hsl(var(--surface))] p-5 opacity-50">
-              <p className="text-sm text-[hsl(var(--muted-card-foreground))]">{card.title}</p>
-              <p className="mt-2 text-sm text-[hsl(var(--muted-card-foreground))]">{card.subtitle}</p>
+            <div
+              key={card.title}
+              className="rounded-[10px] border border-[hsl(var(--foreground)/0.05)] bg-[hsl(var(--deep-surface))] p-5 opacity-40"
+            >
+              <p className="text-[13px] font-medium text-foreground">{card.title}</p>
+              <p className="mt-1.5 text-[11px] leading-[1.5] text-[hsl(var(--foreground)/0.3)]">{card.subtitle}</p>
             </div>
           ))}
         </section>
-      </main>
 
-      <footer className="fixed inset-x-0 bottom-0 flex items-center justify-between bg-background px-6 py-5 md:px-[60px]">
-        <p className="truncate pr-6 text-xs text-[hsl(var(--subtle-foreground))]">{email}</p>
-        <button
-          onClick={handleLogout}
-          className="text-xs text-[hsl(var(--subtle-foreground))] transition-opacity duration-200 hover:opacity-80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring active:scale-[0.98]"
-        >
-          sair
-        </button>
-      </footer>
+        <p className="mt-8 text-[11px] uppercase tracking-[0.08em] text-[hsl(var(--foreground)/0.18)]">{email}</p>
+      </main>
     </div>
   );
 };

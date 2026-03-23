@@ -424,23 +424,31 @@ const Diagnostico = () => {
 
   return (
     <div className="relative h-screen overflow-hidden bg-background">
-      <div className="absolute inset-x-0 top-0 h-0.5 bg-transparent">
-        <div className="h-full bg-primary transition-[width] duration-500 ease-out" style={{ width: progressWidth }} />
+      <div className="absolute inset-x-0 top-0 h-px bg-[hsl(var(--foreground)/0.06)]">
+        <div
+          className="h-full bg-primary transition-[width] duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
+          style={{ width: progressWidth }}
+        />
       </div>
 
-      <div className="pointer-events-none absolute right-6 top-5 text-[11px] text-[hsl(var(--foreground)/0.3)] md:right-[60px]">
-        {stepLabel}
+      <div className="absolute inset-x-0 top-0 z-10 px-6 pt-6 md:px-12">
+        <div className="flex items-center justify-between">
+          <p className="font-display text-[18px] italic text-primary">Lastro.</p>
+          <div className="pointer-events-none text-[11px] tracking-[0.06em] text-[hsl(var(--foreground)/0.25)]">
+            {stepLabel}
+          </div>
+        </div>
       </div>
 
       <div
         ref={scrollRef}
-        className="h-full overflow-y-auto px-6 pb-40 pt-20 md:px-[60px] md:pb-44 md:pt-20"
+        className="h-full overflow-y-auto px-6 pb-44 pt-24 md:px-20 md:pb-48 md:pt-28"
       >
         <div className="mx-auto flex max-w-[560px] flex-col">
           {conversation.map((item, index) => (
             <div key={`${index}-${item.question}`} className="mb-8 last:mb-0">
-              <p className="text-[17px] leading-[1.7] text-foreground">{item.question}</p>
-              <p className="mt-4 border-l-2 border-primary pl-5 text-[15px] leading-[1.7] text-primary">
+              <p className="font-display text-[20px] leading-[1.45] text-foreground md:text-[22px]">{item.question}</p>
+              <p className="mt-4 max-w-[480px] border-l-[1.5px] border-primary pl-[18px] text-[15px] leading-[1.6] text-[hsl(var(--primary)/0.9)]">
                 {item.answer}
               </p>
             </div>
@@ -448,16 +456,16 @@ const Diagnostico = () => {
 
           {!isCompleting && activeQuestion && (
             <div className="mb-8">
-              <p className="text-[17px] leading-[1.7] text-foreground">
+              <p className="font-display text-[20px] leading-[1.45] text-foreground md:text-[22px]">
                 {typedQuestion}
-                {isTyping && <span className="ml-0.5 inline-block animate-pulse text-primary">|</span>}
+                {isTyping && <span className="ml-1 inline-block h-[18px] w-0.5 animate-cursor bg-primary align-middle" />}
               </p>
             </div>
           )}
 
           {isCompleting && (
             <div className="flex min-h-[50vh] items-center justify-center">
-              <p className="animate-fade-in text-center text-base italic text-muted-foreground">
+              <p className="font-display animate-subtle-fade text-center text-[18px] italic text-[hsl(var(--foreground)/0.6)]">
                 {completionMessage}
               </p>
             </div>
@@ -468,9 +476,9 @@ const Diagnostico = () => {
       {!isCompleting && (
         <form
           onSubmit={handleSubmit}
-          className="absolute inset-x-0 bottom-0 border-t border-[hsl(var(--foreground)/0.08)] bg-background px-6 pb-8 pt-6 md:px-6"
+          className="absolute inset-x-0 bottom-0 border-t border-[hsl(var(--foreground)/0.05)] bg-background px-6 pb-8 pt-6 md:px-20"
         >
-          <div className="mx-auto max-w-[calc(560px+48px)] md:px-[36px]">
+          <div className="mx-auto max-w-[640px]">
             {saveError && <p className="mb-3 text-sm text-destructive">{saveError}</p>}
 
             <div className="flex items-center gap-4">
@@ -481,13 +489,13 @@ const Diagnostico = () => {
                 onChange={(event) => setAnswer(event.target.value)}
                 placeholder="escreva sua resposta..."
                 disabled={isTyping || isSaving}
-                className={`w-full bg-transparent text-base text-foreground outline-none placeholder:text-[hsl(var(--foreground)/0.25)] ${shouldShake ? 'animate-shake' : ''}`}
+                className={`font-display w-full bg-transparent text-[17px] text-foreground caret-primary outline-none ${shouldShake ? 'animate-shake' : ''}`}
               />
 
               <button
                 type="submit"
                 disabled={isTyping || isSaving}
-                className="rounded-[6px] border border-primary/40 px-4 py-2 text-[13px] text-primary transition-colors duration-200 hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring active:scale-[0.98] disabled:opacity-40"
+                className="rounded-[6px] border border-[hsl(var(--primary)/0.3)] px-4 py-1.5 text-[12px] uppercase tracking-[0.04em] text-primary transition-colors duration-200 hover:border-[hsl(var(--primary)/0.5)] hover:bg-[hsl(var(--primary)/0.08)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring active:scale-[0.98] disabled:opacity-40"
               >
                 {isSaving ? '...' : 'enviar'}
               </button>
