@@ -22,32 +22,23 @@ const Login = () => {
     }
   };
 
-  const inputStyle: React.CSSProperties = {
-    fontFamily: 'Georgia, serif',
-    fontSize: '15px',
-    color: '#F5F0E8',
-    background: 'transparent',
-    border: 'none',
-    borderBottom: '1px solid rgba(245,240,232,0.2)',
-    outline: 'none',
-    padding: '12px 0',
-    width: '100%',
-  };
-
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="flex flex-col items-center w-full max-w-sm px-6">
-        <h1 style={{ fontFamily: 'Georgia, serif', fontSize: '24px' }} className="text-foreground mb-8">
-          Entrar
-        </h1>
-        <form onSubmit={handleLogin} className="w-full flex flex-col gap-6">
+    <div className="flex min-h-screen items-center justify-center bg-background px-6 py-16">
+      <div className="flex w-full max-w-sm flex-col items-center text-center">
+        <p className="font-display text-[18px] italic text-primary">Lastro.</p>
+        <h1 className="mt-8 font-display text-[36px] leading-none text-foreground">Entrar</h1>
+        <p className="mt-3 text-sm font-light leading-[1.6] text-secondary">
+          Retome seu diagnóstico e veja o que é possível construir a partir dele.
+        </p>
+
+        <form onSubmit={handleLogin} className="mt-12 flex w-full flex-col gap-6 text-left">
           <input
             type="email"
             placeholder="seu@email.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            style={inputStyle}
+            className="w-full border-b border-[hsl(var(--foreground)/0.12)] bg-transparent pb-3 text-[15px] text-foreground outline-none transition-colors duration-200 focus:border-primary"
           />
           <input
             type="password"
@@ -55,26 +46,21 @@ const Login = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            style={inputStyle}
+            className="w-full border-b border-[hsl(var(--foreground)/0.12)] bg-transparent pb-3 text-[15px] text-foreground outline-none transition-colors duration-200 focus:border-primary"
           />
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-primary text-primary-foreground rounded-[6px] mt-2"
-            style={{ fontFamily: 'Georgia, serif', fontSize: '16px' }}
+            className="mt-2 w-full rounded-[8px] bg-primary px-7 py-3 text-[13px] font-medium tracking-[0.01em] text-primary-foreground transition-opacity duration-200 hover:opacity-85 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring active:scale-[0.98]"
           >
-            {loading ? '...' : 'Entrar'}
+            {loading ? '...' : 'entrar'}
           </button>
-          {error && (
-            <p style={{ fontFamily: 'Georgia, serif', fontSize: '13px', color: 'rgba(229, 83, 75, 0.8)' }}>
-              {error}
-            </p>
-          )}
+          {error && <p className="text-[13px] text-destructive">{error}</p>}
         </form>
+
         <button
           onClick={() => navigate('/cadastro')}
-          className="mt-6"
-          style={{ fontFamily: 'Georgia, serif', fontSize: '14px', color: 'rgba(245,240,232,0.5)', background: 'none', border: 'none', cursor: 'pointer' }}
+          className="mt-8 text-[12px] text-[hsl(var(--foreground)/0.45)] transition-opacity duration-200 hover:opacity-80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring active:scale-[0.98]"
         >
           Ainda não tenho conta → criar
         </button>

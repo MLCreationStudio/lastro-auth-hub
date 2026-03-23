@@ -28,6 +28,13 @@ const ZONE_COLORS: Record<LastroZone, string> = {
   pronto: 'hsl(var(--zone-pronto))',
 };
 
+const ZONE_LABELS: Record<LastroZone, string> = {
+  critico: 'crítico',
+  ajuste: 'ajuste necessário',
+  ressalvas: 'viável com ressalvas',
+  pronto: 'pronto para executar',
+};
+
 const dimensionsOrder = (result: LastroCalculation) => [
   { label: 'Viabilidade financeira', value: result.dim1 },
   { label: 'Clareza de ICP', value: result.dim2 },
@@ -190,32 +197,35 @@ const Resultado = () => {
     <div className="flex min-h-screen items-center justify-center bg-background px-6 py-16 md:px-[60px]">
       <main className="flex w-full max-w-3xl flex-col items-center text-center">
         <section>
+          <p className="text-[11px] uppercase tracking-[0.14em] text-[hsl(var(--foreground)/0.3)]">
+            Lastro Score
+          </p>
           <p
-            className="text-[88px] font-medium leading-[0.95]"
+            className="font-display text-[96px] leading-[0.9] md:text-[120px]"
             style={{ color: ZONE_COLORS[result.zone] }}
           >
             {displayedScore}
           </p>
-          <p className="mt-4 text-[13px] uppercase tracking-[0.08em] text-[hsl(var(--foreground)/0.4)]">
-            Lastro Score
+          <p className="mt-2 text-[12px] uppercase tracking-[0.1em] text-[hsl(var(--primary)/0.6)]">
+            {ZONE_LABELS[result.zone]}
           </p>
         </section>
 
-        <section className="mt-8 max-w-[480px] min-h-[86px]">
-          <p className="text-[18px] leading-[1.6] text-foreground">{typedPhrase}</p>
+        <section className="mt-8 max-w-[440px] min-h-[96px]">
+          <p className="font-display text-[20px] italic leading-[1.5] text-foreground">{typedPhrase}</p>
         </section>
 
-        <section className="mt-8 flex w-full max-w-[400px] flex-col gap-4">
+        <section className="mt-10 flex w-full max-w-[400px] flex-col gap-3">
           {dimensions.map((dimension, index) => (
-            <div key={dimension.label} className="grid grid-cols-[minmax(140px,180px)_1fr_auto] items-center gap-4">
-              <p className="text-left text-xs text-[hsl(var(--foreground)/0.45)]">{dimension.label}</p>
-              <div className="h-[3px] overflow-hidden bg-[hsl(var(--foreground)/0.08)]">
+            <div key={dimension.label} className="grid grid-cols-[minmax(140px,160px)_1fr_28px] items-center gap-4">
+              <p className="text-left text-[12px] tracking-[0.01em] text-[hsl(var(--foreground)/0.35)]">{dimension.label}</p>
+              <div className="h-px overflow-hidden bg-[hsl(var(--foreground)/0.08)]">
                 <div
-                  className="h-full bg-primary transition-[width] duration-700 ease-out"
+                  className="h-full bg-primary transition-[width] duration-[1100ms] ease-[cubic-bezier(0.4,0,0.2,1)]"
                   style={{ width: index < visibleBars ? `${dimension.value}%` : '0%' }}
                 />
               </div>
-              <p className="text-xs text-primary">{dimension.value}</p>
+              <p className="text-[12px] text-[hsl(var(--primary)/0.8)]">{dimension.value}</p>
             </div>
           ))}
         </section>
@@ -223,12 +233,12 @@ const Resultado = () => {
         <section className="mt-10 flex max-w-[420px] flex-col items-center">
           {result.zone === 'critico' ? (
             <>
-              <p className="text-sm italic leading-[1.7] text-muted-foreground">
+              <p className="text-sm italic leading-[1.7] text-secondary">
                 Com esse score, o mapa de GTM ainda não está disponível. Ajuste os pontos abaixo e refaça o diagnóstico.
               </p>
               <button
                 onClick={() => navigate('/diagnostico', { state: { restart: true } })}
-                className="mt-6 rounded-[6px] border border-[hsl(var(--foreground)/0.2)] px-6 py-3 text-sm text-[hsl(var(--foreground)/0.6)] transition-colors duration-200 hover:bg-[hsl(var(--foreground)/0.04)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring active:scale-[0.98]"
+                className="mt-6 rounded-[8px] border border-[hsl(var(--foreground)/0.12)] px-6 py-3 text-[13px] text-secondary transition-colors duration-200 hover:border-[hsl(var(--foreground)/0.25)] hover:text-[hsl(var(--foreground)/0.7)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring active:scale-[0.98]"
               >
                 Refazer diagnóstico
               </button>
@@ -237,13 +247,13 @@ const Resultado = () => {
             <>
               <button
                 onClick={() => navigate('/plano')}
-                className="rounded-[6px] bg-primary px-6 py-3 text-base text-primary-foreground transition-colors duration-200 hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring active:scale-[0.98]"
+                className="rounded-[8px] bg-primary px-7 py-3 text-[13px] font-medium tracking-[0.01em] text-primary-foreground transition-opacity duration-200 hover:opacity-85 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring active:scale-[0.98]"
               >
                 Ver meu mapa de GTM →
               </button>
               <button
                 onClick={() => navigate('/diagnostico', { state: { restart: true } })}
-                className="mt-4 text-sm text-muted-foreground transition-opacity duration-200 hover:opacity-80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring active:scale-[0.98]"
+                className="mt-3.5 text-[12px] text-[hsl(var(--foreground)/0.25)] transition-opacity duration-200 hover:opacity-80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring active:scale-[0.98]"
               >
                 Refazer diagnóstico
               </button>
