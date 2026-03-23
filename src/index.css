@@ -24,6 +24,10 @@
     --surface: 161 38% 16%;
     --muted-card-foreground: 30 33% 64%;
     --subtle-foreground: 30 33% 56%;
+    --zone-critical: 0 72% 59%;
+    --zone-ajuste: 34 78% 41%;
+    --zone-ressalvas: 82 63% 37%;
+    --zone-pronto: 157 68% 37%;
 
     --accent: 157 68% 37%;
     --accent-foreground: 156 40% 9%;

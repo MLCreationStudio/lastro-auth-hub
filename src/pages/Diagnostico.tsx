@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 
@@ -190,6 +190,7 @@ const buildPayloadForStep = (stepIndex: number, answer: string, userId: string) 
 };
 
 const Diagnostico = () => {
+  const location = useLocation();
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -206,6 +207,7 @@ const Diagnostico = () => {
   const [saveError, setSaveError] = useState('');
   const [isCompleting, setIsCompleting] = useState(false);
   const [completionIndex, setCompletionIndex] = useState(0);
+  const shouldRestart = Boolean((location.state as { restart?: boolean } | null)?.restart);
 
   const activeQuestion = QUESTIONS[currentQuestionIndex] ?? null;
   const progressWidth = `${(conversation.length / QUESTIONS.length) * 100}%`;
@@ -231,6 +233,14 @@ const Diagnostico = () => {
       }
 
       setSession(activeSession);
+
+      if (shouldRestart) {
+        setConversation([]);
+        setCurrentQuestionIndex(0);
+        setDiagnosticoId(null);
+        setLoading(false);
+        return;
+      }
 
       const { data, error } = await supabase
         .from('diagnostico')
@@ -270,7 +280,7 @@ const Diagnostico = () => {
     return () => {
       isMounted = false;
     };
-  }, [navigate]);
+  }, [navigate, shouldRestart]);
 
   useEffect(() => {
     if (loading || isCompleting || !activeQuestion) return;
@@ -363,6 +373,10 @@ const Diagnostico = () => {
 
       setConversation((current) => [...current, { question: activeQuestion, answer: trimmedAnswer }]);
       setAnswer('');
+
+      if (shouldRestart) {
+        navigate('/diagnostico', { replace: true });
+      }
 
       if (currentQuestionIndex === QUESTIONS.length - 1) {
         setIsCompleting(true);
